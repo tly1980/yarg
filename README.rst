@@ -4,8 +4,9 @@ YArg
 Insipiration:
 -------------
 
-Python argparse_ is a great libary shipped with Python 2.7. 
-It is powerful and highly configurable argument parser, I've been using it for a while, and I do like it and enjoy using it. 
+Argparse_ is a great libary shipped with Python 2.7. 
+It is powerful and highly configurable argument parser, 
+I've been using it for a while, and I do like it and enjoy using it.
 
 However, I also found it is a little bit difficult to use, 
 and it could be ending up quite boaring to adding up arguments by calling argparse_ APIs.
@@ -17,6 +18,7 @@ YArg_ is a lib intended to make easier to create command-line app.
 
 Highlights:
 -----------
+- No need to specify what arguments to add. YArg_ will try matching the right argument with you functions.
 
 - YAML_ format arguments. Which means argument with types. Thanks to PyYAML_.
 
