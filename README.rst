@@ -11,14 +11,14 @@ However, I also found it is a little bit difficult to use,
 and it could be ending up quite boaring to adding up arguments by calling argparse_ APIs.
 
 After writing a couple scripts / app using argparse_, 
-I belive that I found a arguably, better and easier way to do it: YArg_.
+I belive that I found a *arguably* better and easier way to do it: YArg_.
 
 YArg_ is a lib intended to make easier to create command-line app.
 
 Highlights:
 -----------
 
-- YAML_ format arguments. Which means argument with types.
+- YAML_ format arguments. Which means argument with types. Thanks to PyYAML_.
 
   - int
   - float
@@ -33,6 +33,7 @@ Highlights:
 - Hiding the complexity of using argparse_.
 
 .. _YAML: http://yaml.org
+.. _PyYAML_: http://pyyaml.org
 .. _argparse: https://docs.python.org/2.7/library/argparse.html
 .. _YArg: https://github.com/tly1980/yarg
 
