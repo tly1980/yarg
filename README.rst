@@ -11,8 +11,7 @@ However, I also found it is a little bit difficult to use,
 and it could be ending up quite boaring to adding up arguments by calling argparse_ APIs.
 
 After writing a couple scripts / app using argparse_, 
-I belive that I found a better and easier way to do it, well, arguably.
-So here comes with YArg_.
+I belive that I found a arguably, better and easier way to do it: YArg_.
 
 YArg_ is a lib intended to make easier to create command-line app.
 
