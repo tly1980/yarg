@@ -33,7 +33,7 @@ Highlights:
 - Hiding the complexity of using argparse_.
 
 .. _YAML: http://yaml.org
-.. _PyYAML_: http://pyyaml.org
+.. _PyYAML: http://pyyaml.org
 .. _argparse: https://docs.python.org/2.7/library/argparse.html
 .. _YArg: https://github.com/tly1980/yarg
 
