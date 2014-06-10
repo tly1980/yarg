@@ -4,6 +4,7 @@ import inspect
 import logging
 import logging.config
 import os.path
+from functools import wraps
 
 import yaml
 
@@ -35,8 +36,11 @@ def yaml_x(argstr):
 
     return yaml.load(argstr)
 
-class Main(object):
-    def __init__(self, actions_map, parser=None, description='A kick-ass commandline app using yarg.'):
+def function_usage(func):
+    return str(inspect.getargspec(func))
+
+class App(object):
+    def __init__(self, actions_map={}, parser=None, description='A kick-ass commandline app using yarg.'):
         self.actions_map = actions_map
         if not parser:
             self.parser = argparse.ArgumentParser(description=description)
@@ -52,8 +56,7 @@ class Main(object):
         self.parser.add_argument('-ll', '--loglevel', dest='loglevel', type=str, default=None)
         self.parser.add_argument('--logcfg', type=str, default='./log.yaml')
 
-        self.parser.add_argument('-y', '--yield', '')
-
+        #self.parser.add_argument('-y', '--yield', '')
 
         self.ARGS = None
 
@@ -133,7 +136,44 @@ class Main(object):
 
         return fun(*the_args, **the_kwargs)
 
+
+    def action(self, arg1):
+        if not hasattr(arg1, '__call__' ):
+            def action2(func):
+                self.actions_map[arg1] = func
+                def func_wrapper(*args, **kwargs):
+                    return func(*args, **kwargs)
+                return func_wrapper
+            return action2
+        else:
+            func = arg1
+            self.actions_map[func.__name__] = func
+            def func_wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+            return func_wrapper
+
+
+    def help(self, name=None):
+        if not name:
+            print "Here are the available actions:"
+            print "================================="
+            idx = 0
+            for aname, fun in self.actions_map.items():
+                idx += 1
+                if aname not in ['?', 'help']:
+                    print "%s. %s - %s" %(idx, aname, function_usage(fun))
+        else:
+            print "usage for %s is:" % name 
+            print "\t %s" % function_usage(self.actions_map[name])
+
+
+    def prepare(self):
+        self.actions_map['?'] = self.help
+        self.actions_map['help'] = self.help
+        pass
+
     def main(self, args_list=[]):
+        self.prepare()
         self.parse(args_list)
         self.init_log()
         return self.call_action()
