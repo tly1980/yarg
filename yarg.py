@@ -22,7 +22,7 @@ handlers:
     console:
         class: logging.StreamHandler
         formatter: simple
-        stream: ext://sys.stdout
+        stream: ext://sys.stderr
 
 root:
     level: INFO
@@ -60,7 +60,7 @@ class App(object):
         self.parser.add_argument('-x', '--extends', nargs='+', type=str, default=[])
 
         self.parser.add_argument('-V', '--verbose', default=False, action='store_true')
-        self.parser.add_argument('-ll', '--loglevel', dest='loglevel', type=str, default=None)
+        self.parser.add_argument('-VL', '--loglevel', dest='loglevel', type=str, default=None)
         self.parser.add_argument('--logcfg', type=str, default='./log.yaml')
 
 
