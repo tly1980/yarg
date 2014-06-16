@@ -39,28 +39,34 @@ def yaml_x(argstr):
 def function_usage(func):
     return str(inspect.getargspec(func))
 
-class App(object):
-    def __init__(self, actions_map={}, parser=None, description='A kick-ass commandline app using yarg.'):
-        self.actions_map = actions_map
-        if not parser:
-            self.parser = argparse.ArgumentParser(description=description)
-        else:
-            self.parser = parser
 
-        self.parser.add_argument('action_or_args', nargs='+', type=str, default=[])
+class App(object):
+    def __init__(self, actions_map={}, default_action=None, description='A kick-ass commandline app using yarg.'):
+        self._description = description
+        self.logger = logging.getLogger('yarg.App')
+        self.actions_map = actions_map
+        self.default_action = default_action
+        #self.parser.add_argument('-y', '--yield', '')
+
+        self.ARGS = None
+
+    def init_parser(self):
+        self.parser = argparse.ArgumentParser(description=self._description)
+
+        self.parser.add_argument('action_or_args', nargs='*', type=str, default=[])
 
         self.parser.add_argument('-va', '--vargs', type=str)
         self.parser.add_argument('-ka', '--kwargs', type=str)
         self.parser.add_argument('-x', '--extends', nargs='+', type=str, default=[])
 
+        self.parser.add_argument('-V', '--verbose', default=False, action='store_true')
         self.parser.add_argument('-ll', '--loglevel', dest='loglevel', type=str, default=None)
         self.parser.add_argument('--logcfg', type=str, default='./log.yaml')
 
-        #self.parser.add_argument('-y', '--yield', '')
-
-        self.ARGS = None
 
     def init_log(self):
+        if not self.ARGS.verbose:
+            return
         # logging.basicConfig(level=level, 
         #     format=self.ARGS.logformat, datefmt=self.ARGS.logdateformat)
         logcfg = {}
@@ -76,25 +82,33 @@ class App(object):
         print >> sys.stderr, message
         sys.exit(exit_code)
 
-    def parse(self, lst=[]):
-
-        if not lst:
-            self.ARGS = self.parser.parse_args()
-        else:
-            self.ARGS = self.parser.parse_args(lst)
-
     def guess_args(self):
-        action = self.ARGS.action_or_args[0]
-        args = [yaml.load(a) for a in self.ARGS.action_or_args[1:]]
+        #action = self.ARGS.action_or_args[0]
+        action = self.default_action
+        action_name = '_DEFUALT_ACTION'
+        args = []
+
+        if len(self.ARGS.action_or_args):
+            action_name = self.ARGS.action_or_args[0]
+
+            if action_name not in self.actions_map:
+                # YARG_APP.py params0 params1 params2 ... 
+                action = self.default_action
+                action_name = '_DEFUALT_ACTION'
+                args = [yaml.load(a) for a in self.ARGS.action_or_args]
+            else:
+                # YARG_APP.py action params0 params1 params2 ... 
+                action = self.actions_map.get(action_name)
+                args = [yaml.load(a) for a in self.ARGS.action_or_args[1:]]
 
         the_kwargs =  yaml_x(self.ARGS.kwargs) if self.ARGS.kwargs else {}
         the_vargs = yaml_x(self.ARGS.vargs) if self.ARGS.vargs else []
 
         if not isinstance(the_vargs, list):
-            self.failed("-va/--vargs has to be a LIST in yaml/json format")
+            self.failed("-va/--vargs has to be a LIST in yaml format")
 
         if not isinstance(the_kwargs, dict):
-            self.failed("-ka/--kwargs has to be a DICTIONARY in yaml/json format")
+            self.failed("-ka/--kwargs has to be a DICTIONARY in yaml format")
 
         xkwargs = [yaml.load(kv) for kv in self.ARGS.extends]
 
@@ -102,11 +116,11 @@ class App(object):
 
         if len(invalid_xkwargs):
             self.failed("""
-                -x/-extends has to be DICTIONARY in yaml/json format. Namely, something like 'a: 123' or '{"a": 123}' """)
+                -x/-extends has to be DICTIONARY in yaml format. Namely, something like 'a: 123' or '{"a": 123}' """)
 
         [the_kwargs.update(**x) for x in xkwargs]
 
-        return action, args + the_vargs, the_kwargs
+        return action_name, action, args + the_vargs, the_kwargs
 
     def print_available_actions(self):
         print "Here are the available actions:"
@@ -118,35 +132,38 @@ class App(object):
 
     def call_action(self):
 
-        action, the_args, the_kwargs = self.guess_args()
+        action_name, action_fun, the_args, the_kwargs = self.guess_args()
 
-        fun = self.actions_map.get(action)
-
-        if not fun:
-            msg = "%s cannot be found in action map. Please use -aa to see available actions."  % action
+        if not action_fun:
+            msg = "%s cannot be found. Please use '?' to see available actions." % action_name
             self.failed(msg)
 
         actual_args = None
         try:
-            actual_args = inspect.getcallargs(fun, *the_args, **the_kwargs)
+            actual_args = inspect.getcallargs(action_fun, *the_args, **the_kwargs)
         except Exception, e:
             self.failed("Argument conflicts: %s " % str(e))
 
-        print "About to call [%s] using: %s " % (action, str(actual_args))
+        self.logger.debug("About to call [ %s ] using: %s " % (action_name, str(actual_args)))
 
-        return fun(*the_args, **the_kwargs)
+        return action_fun(*the_args, **the_kwargs)
 
 
-    def action(self, arg1):
+    def action(self, arg1="", default=False):
         if not hasattr(arg1, '__call__' ):
             def action2(func):
-                self.actions_map[arg1] = func
+                name = arg1 if arg1 else func.__name__
+                self.actions_map[name] = func
+                if default:
+                    self.default_action = func
                 def func_wrapper(*args, **kwargs):
                     return func(*args, **kwargs)
                 return func_wrapper
             return action2
         else:
             func = arg1
+            if not self.actions_map.keys():
+                self.default_action = func
             self.actions_map[func.__name__] = func
             def func_wrapper(*args, **kwargs):
                 return func(*args, **kwargs)
@@ -167,14 +184,18 @@ class App(object):
             print "\t %s" % function_usage(self.actions_map[name])
 
 
-    def prepare(self):
+    def prepare(self, args_list):
+        self.init_parser()
         self.actions_map['?'] = self.help
         self.actions_map['help'] = self.help
-        pass
+        if args_list:
+            self.ARGS = self.parser.parse_args(args_list)
+        else:
+            self.ARGS = self.parser.parse_args()
 
     def main(self, args_list=[]):
-        self.prepare()
-        self.parse(args_list)
+        self.prepare(args_list)
+        #self.parse(args_list)
         self.init_log()
         return self.call_action()
 

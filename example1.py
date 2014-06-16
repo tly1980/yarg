@@ -16,16 +16,16 @@ APP_BANNER = """
 APP_DESCRIPTION = "A kick example app what so ever."
 
 
-app = yarg.App()
+def fun_min(*a):
+    logging.info("about to find out the min number from: %s" % repr(a))
+    logging.debug("Some debug message hopefully make senses to u.")
+    print min(a)
 
-@app.action('haha')
-def fun1(a, b, c='c'):
-    logging.info("%s, %s, %s", a, b, c)
-    logging.debug("%s - %s - %s", a, b, c)
 
-@app.action
-def fun2(*a):
+def fun_sum(*a):
     print sum(a)
+
+app = yarg.App(actions_map={'m': fun_min, 's': fun_sum}, default_action=fun_min)
 
 if __name__ == '__main__':
     app.main()
